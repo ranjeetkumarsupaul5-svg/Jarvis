@@ -1,0 +1,11 @@
+envjarvis/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.db
+.env
+cookies.json
+backend/cookies.json
+backend/*.json
+.vscode/
