@@ -34,8 +34,8 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div class="container">
-      <section id="Start">
+    <!-- Start & Authentication Overlay -->
+    <section id="Start" class="start-overlay">
         <div class="row">
           <div class="col-lg-12">
             <div
@@ -415,80 +415,1077 @@
                 Initializing...
               </h1>
             </div>
+            <div class="d-flex justify-content-center align-items-center mt-3">
+              <button id="bypassAuthBtn" class="btn btn-sm btn-outline-cyan opacity-75 px-3 py-1" style="font-size: 0.78rem; letter-spacing: 1px;">
+                <i class="bi bi-shield-lock"></i> ENTER DESKTOP OS
+              </button>
+            </div>
           </div>
         </div>
       </section>
-      <section id="Oval" class="mb-4">
-        <div class="row">
-          <div class="col-md-1"></div>
-          <div class="col-md-10">
-            <div
-              class="d-flex justify-content-center align-items-center"
-              style="height: 80vh"
-            >
-              <canvas
-                id="canvasOne"
-                width="700"
-                height="420"
-                style="position: absolute"
-              ></canvas>
-              <div id="JarvisHood">
-                <div class="square">
-                  <span class="circle"></span>
-                  <span class="circle"></span>
-                  <span class="circle"></span>
+    <!-- Main Desktop Application Shell -->
+    <div id="JarvisApp" class="jarvis-app-wrapper">
+      <!-- 1. Left Sidebar Navigation -->
+      <aside id="JarvisSidebar" class="jarvis-sidebar">
+        <div class="sidebar-top">
+          <div class="sidebar-brand d-flex align-items-center gap-2 px-3 py-3">
+            <div class="core-mini-orb"></div>
+            <div>
+              <div class="brand-text">JARVIS</div>
+              <div class="brand-sub">AI // OS v2.0</div>
+            </div>
+          </div>
+          <nav class="sidebar-nav">
+            <button class="nav-item active" data-panel="panel-home"><i class="bi bi-house-door"></i> <span>Home</span></button>
+            <button class="nav-item" data-panel="panel-agents"><i class="bi bi-robot"></i> <span>Agents</span></button>
+            <button class="nav-item" data-panel="panel-automation"><i class="bi bi-clock-history"></i> <span>Automation</span></button>
+            <button class="nav-item" data-panel="panel-browser"><i class="bi bi-globe2"></i> <span>Browser</span></button>
+            <button class="nav-item" data-panel="panel-files"><i class="bi bi-folder2-open"></i> <span>Files</span></button>
+            <button class="nav-item" data-panel="panel-terminal"><i class="bi bi-terminal"></i> <span>Terminal</span></button>
+            <button class="nav-item" data-panel="panel-github"><i class="bi bi-github"></i> <span>GitHub</span></button>
+            <button class="nav-item" data-panel="panel-google"><i class="bi bi-grid-3x3-gap"></i> <span>Workspace</span></button>
+            <button class="nav-item" data-panel="panel-aitools"><i class="bi bi-stars"></i> <span>AI Tools</span></button>
+            <button class="nav-item" data-panel="panel-vision"><i class="bi bi-eye"></i> <span>Vision</span></button>
+            <button class="nav-item" data-panel="panel-memory"><i class="bi bi-database"></i> <span>Memory</span></button>
+            <button class="nav-item" data-panel="panel-settings"><i class="bi bi-gear"></i> <span>Settings</span></button>
+          </nav>
+        </div>
+        <div class="sidebar-bottom p-3">
+          <div class="mini-status-card p-2 rounded">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="small text-muted">CORE STATUS</span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-circle-fill pulse-dot"></i> ONLINE</span>
+            </div>
+            <div class="progress mb-1" style="height: 4px;">
+              <div id="sidebarRamBar" class="progress-bar bg-info" style="width: 50%;"></div>
+            </div>
+            <div class="d-flex justify-content-between text-muted" style="font-size: 0.65rem;">
+              <span id="sidebarRamText">RAM: --%</span>
+              <span id="sidebarBatteryText">BAT: --%</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 2. Main Viewport -->
+      <main class="jarvis-viewport flex-grow-1 d-flex flex-column">
+        <!-- Top Header Bar -->
+        <header class="jarvis-topbar d-flex justify-content-between align-items-center px-4 py-2">
+          <div class="d-flex align-items-center gap-3">
+            <div class="topbar-breadcrumb">
+              <span class="text-muted small">JARVIS AI OS //</span>
+              <span id="currentPanelTitle" class="text-cyan fw-bold ms-1">HOME DASHBOARD</span>
+            </div>
+            <span id="activeAgentBadge" class="badge bg-dark border border-secondary text-cyan small"><i class="bi bi-cpu"></i> CORE AGENT: STANDBY</span>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="hud-pills d-flex align-items-center gap-2">
+              <span id="topCpuPill" class="hud-pill"><i class="bi bi-cpu"></i> CPU: --%</span>
+              <span id="topRamPill" class="hud-pill"><i class="bi bi-memory"></i> RAM: --%</span>
+              <span id="topDiskPill" class="hud-pill"><i class="bi bi-hdd"></i> DISK: --%</span>
+              <span id="topNetPill" class="hud-pill"><i class="bi bi-wifi"></i> NET: OK</span>
+            </div>
+            <button id="topChatDrawerBtn" class="btn btn-sm btn-outline-cyan glow-on-hover-sm" title="Open Neural Stream Chat">
+              <i class="bi bi-chat-dots-fill"></i>
+            </button>
+          </div>
+        </header>
+
+        <!-- Panels Container -->
+        <div class="jarvis-panels-container flex-grow-1 p-3">
+          <!-- PANEL 1: HOME / DASHBOARD -->
+          <div id="panel-home" class="jarvis-panel active">
+            <!-- Status Subtitle Banner -->
+            <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded" style="background: rgba(6, 12, 24, 0.6); border: 1px solid var(--jarvis-border);">
+              <div class="d-flex align-items-center gap-3 small">
+                <span><span class="text-muted">TASK:</span> <strong id="homeCurrentTask" class="text-light">Awaiting voice or keyboard command</strong></span>
+                <span><span class="text-muted">ACTIVE WINDOW:</span> <strong id="homeActiveWin" class="text-cyan">Desktop</strong></span>
+              </div>
+              <span class="badge bg-dark border border-secondary text-info">Core Engine v2.0</span>
+            </div>
+
+            <!-- Central AI Core & Arc Reactor Hood (Preserved 100%) -->
+            <section id="Oval" class="mb-4">
+              <div class="row">
+                <div class="col-md-1"></div>
+                <div class="col-md-10">
+                  <div class="d-flex justify-content-center align-items-center position-relative" style="height: 380px">
+                    <canvas id="canvasOne" width="700" height="380" style="position: absolute"></canvas>
+                    <div id="JarvisHood">
+                      <div class="square">
+                        <span class="circle"></span>
+                        <span class="circle"></span>
+                        <span class="circle"></span>
+                      </div>
+                    </div>
+                  </div>
+                  <h4 class="text-light text-center mt-2 mb-3">Ask me Anything</h4>
+
+                  <div class="col-md-12">
+                    <div class="text-center">
+                      <div id="TextInput" class="d-flex">
+                        <input type="text" id="chatbox" name="chatbox" placeholder="Ask me anything..." class="input-field" />
+                        <button id="SendBtn" class="glow-on-hover" hidden>
+                          <i class="bi bi-send-fill"></i>
+                        </button>
+                        <button id="MicBtn" class="glow-on-hover">
+                          <i class="bi bi-mic"></i>
+                        </button>
+                        <button id="ChatBtn" class="glow-on-hover">
+                          <i class="bi bi-chat-dots"></i>
+                        </button>
+                        <button id="SettingBtn" class="glow-on-hover">
+                          <i class="bi bi-gear-wide-connected"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-1"></div>
+              </div>
+            </section>
+
+            <!-- SiriWave Visualizer Container (Preserved) -->
+            <div id="SiriWave" class="mb-4" hidden>
+              <div class="container text-center py-4">
+                <p class="text-light mb-2 siri-message">Listening to speech...</p>
+                <div id="siri-container"></div>
+              </div>
+            </div>
+
+            <!-- Real-time Metric Cards Row -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-3 col-sm-6">
+                <div class="metric-card">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="metric-title">CPU PROCESSOR</span>
+                    <i class="bi bi-cpu text-cyan fs-5"></i>
+                  </div>
+                  <div class="metric-value" id="cardCpuVal">--%</div>
+                  <div class="metric-sub" id="cardCpuSub">Multi-core Architecture</div>
+                </div>
+              </div>
+              <div class="col-md-3 col-sm-6">
+                <div class="metric-card">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="metric-title">SYSTEM MEMORY</span>
+                    <i class="bi bi-memory text-cyan fs-5"></i>
+                  </div>
+                  <div class="metric-value" id="cardRamVal">--%</div>
+                  <div class="metric-sub" id="cardRamSub">-- GB / -- GB Used</div>
+                </div>
+              </div>
+              <div class="col-md-3 col-sm-6">
+                <div class="metric-card">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="metric-title">STORAGE (C:)</span>
+                    <i class="bi bi-hdd text-cyan fs-5"></i>
+                  </div>
+                  <div class="metric-value" id="cardDiskVal">--%</div>
+                  <div class="metric-sub" id="cardDiskSub">-- GB Free</div>
+                </div>
+              </div>
+              <div class="col-md-3 col-sm-6">
+                <div class="metric-card">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="metric-title">BATTERY / POWER</span>
+                    <i class="bi bi-battery-charging text-cyan fs-5"></i>
+                  </div>
+                  <div class="metric-value" id="cardBatVal">--%</div>
+                  <div class="metric-sub" id="cardBatSub">AC Charging Connected</div>
                 </div>
               </div>
             </div>
-            <h4 class="text-light text-center">Ask me Anything</h4>
 
-            <div class="col-md-12 mt-4 pt-4">
-              <div class="text-center">
-                <div id="TextInput" class="d-flex">
-                  <input
-                    type="text"
-                    id="chatbox"
-                    name="chatbox"
-                    placeholder="Ask me anything..."
-                    class="input-field"
-                  />
-                  <button id="MicBtn" class="glow-on-hover">
-                    <i class="bi bi-mic"></i>
-                  </button>
-                  <button id="ChatBtn" class="glow-on-hover">
-                    <i class="bi bi-chat-dots"></i>
-                  </button>
-                  <button id="SettingBtn" class="glow-on-hover">
-                    <i class="bi bi-gear-wide-connected"></i>
-                  </button>
+            <!-- Quick Action Toolbar -->
+            <div class="p-3 mb-4 rounded" style="background: var(--jarvis-card); border: 1px solid var(--jarvis-border);">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-bold text-cyan"><i class="bi bi-lightning-charge"></i> QUICK EXECUTIVE COMMANDS</span>
+                <span class="small text-muted">Single-click trigger</span>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-sm btn-outline-cyan quick-act-btn" data-cmd="system info"><i class="bi bi-speedometer2"></i> System Diagnostic</button>
+                <button class="btn btn-sm btn-outline-cyan quick-act-btn" data-cmd="take screenshot"><i class="bi bi-camera"></i> Capture Screen</button>
+                <button class="btn btn-sm btn-outline-cyan quick-act-btn" data-action="captureWebcamNow"><i class="bi bi-webcam"></i> Webcam Snapshot</button>
+                <button class="btn btn-sm btn-outline-cyan quick-act-btn" data-cmd="inspect repository"><i class="bi bi-diagram-3"></i> Inspect Codebase</button>
+                <button class="btn btn-sm btn-outline-cyan quick-act-btn" data-action="getProcessList"><i class="bi bi-list-task"></i> Active Processes</button>
+                <button class="btn btn-sm btn-outline-cyan quick-act-btn" data-cmd="minimize all windows"><i class="bi bi-window-dash"></i> Minimize Windows</button>
+                <button class="btn btn-sm btn-outline-cyan quick-act-btn" data-cmd="search the web for latest AI news"><i class="bi bi-globe"></i> Search Web AI</button>
+              </div>
+            </div>
+
+            <!-- Recent Activity Stream -->
+            <div class="terminal-window">
+              <div class="terminal-header d-flex justify-content-between align-items-center">
+                <span class="text-cyan small fw-bold"><i class="bi bi-activity"></i> RECENT AGENT & SYSTEM ACTIVITY</span>
+                <button id="homeRefreshLogsBtn" class="btn btn-sm text-cyan py-0"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+              </div>
+              <div class="p-0 table-responsive" style="max-height: 220px; overflow-y: auto;">
+                <table class="table terminal-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>TIME</th>
+                      <th>ACTION / QUERY</th>
+                      <th>TOOL</th>
+                      <th>STATUS</th>
+                      <th>OUTCOME</th>
+                    </tr>
+                  </thead>
+                  <tbody id="homeActivityTbody">
+                    <tr><td colspan="5" class="text-center text-muted py-3">Loading telemetry stream...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 2: AGENTS PANEL -->
+          <div id="panel-agents" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-robot"></i> AUTONOMOUS MULTI-AGENT HUB</h4>
+                <span class="text-muted small">Specialized cognitive execution units</span>
+              </div>
+              <span class="badge bg-dark border border-secondary text-info">11 Agents Active</span>
+            </div>
+            <div class="row g-3">
+              <!-- Planner Agent -->
+              <div class="col-md-4">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-signpost-split text-cyan me-1"></i> Planner Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">Intent decomposition, entity extraction, and multi-tool routing.</p>
+                    <button class="agent-btn" data-tool="get_system_info"><i class="bi bi-check-circle"></i> Test Plan & Route</button>
+                    <div class="agent-output-box mt-2" id="out-planner">// Brain reasoning active...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Coding Agent -->
+              <div class="col-md-4">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-code-slash text-cyan me-1"></i> Coding Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">Repository structure audit, git status, diff, safe commits, tests.</p>
+                    <button class="agent-btn" data-tool="inspect_repo"><i class="bi bi-diagram-3"></i> Inspect Repository</button>
+                    <button class="agent-btn" data-tool="git_status"><i class="bi bi-git"></i> Check Git Status</button>
+                    <button class="agent-btn" data-tool="run_tests"><i class="bi bi-play-circle"></i> Run Test Suite</button>
+                    <div class="agent-output-box mt-2" id="out-coding">// Ready for commands...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Vision Agent -->
+              <div class="col-md-4">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-eye text-cyan me-1"></i> Vision Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">Display geometry, active window, screenshot and webcam perception.</p>
+                    <button class="agent-btn" data-tool="inspect_screen"><i class="bi bi-display"></i> Inspect Screen Metrics</button>
+                    <button class="agent-btn" data-tool="take_screenshot"><i class="bi bi-camera"></i> Capture Desktop</button>
+                    <button class="agent-btn" data-tool="capture_webcam"><i class="bi bi-webcam"></i> Webcam Snapshot</button>
+                    <div class="agent-output-box mt-2" id="out-vision">// Perception standby...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Terminal Agent -->
+              <div class="col-md-4">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-terminal text-cyan me-1"></i> Terminal Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">Process supervision, dev environment diagnostics, command runner.</p>
+                    <button class="agent-btn" data-tool="inspect_environment"><i class="bi bi-cpu"></i> Inspect Dev Environment</button>
+                    <button class="agent-btn" data-tool="list_processes"><i class="bi bi-list-task"></i> List Top Processes</button>
+                    <div class="agent-output-box mt-2" id="out-terminal">// Shell manager ready...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- File Agent -->
+              <div class="col-md-4">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-folder2-open text-cyan me-1"></i> File Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">Deep code grep, extension discovery, document summarization.</p>
+                    <button class="agent-btn" data-tool="search_files" data-param='{"keyword": "config"}'><i class="bi bi-search"></i> Search Configs</button>
+                    <button class="agent-btn" data-tool="search_content" data-param='{"keyword": "JarvisBrain"}'><i class="bi bi-file-earmark-code"></i> Grep JarvisBrain</button>
+                    <div class="agent-output-box mt-2" id="out-files">// File indexing ready...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Browser Agent -->
+              <div class="col-md-4">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-globe2 text-cyan me-1"></i> Browser Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">Web search dispatch, clean article scraping, link extraction.</p>
+                    <button class="agent-btn" data-tool="search_and_open" data-param='{"query": "DeepMind AI"}'><i class="bi bi-box-arrow-up-right"></i> Search DeepMind</button>
+                    <button class="agent-btn" data-tool="scrape_and_summarize" data-param='{"url": "https://en.wikipedia.org/wiki/Artificial_intelligence"}'><i class="bi bi-file-text"></i> Scrape AI Wiki</button>
+                    <div class="agent-output-box mt-2" id="out-browser">// Browser agent ready...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Memory Agent -->
+              <div class="col-md-4">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-database text-cyan me-1"></i> Memory Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">Short-term turns, persistent user facts, context recall.</p>
+                    <button class="agent-btn" data-tool="recall"><i class="bi bi-arrow-repeat"></i> Recall All Facts</button>
+                    <div class="agent-output-box mt-2" id="out-memory">// Cognitive memory online...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Research Agent -->
+              <div class="col-md-4">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-search text-cyan me-1"></i> Research Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">Multi-engine search aggregation, Wikipedia deep retrieval.</p>
+                    <button class="agent-btn" data-tool="search_web" data-param='{"query": "quantum computing breakthroughs"}'><i class="bi bi-binoculars"></i> Research Quantum</button>
+                    <div class="agent-output-box mt-2" id="out-research">// Research ready...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Automation Agent -->
+              <div class="col-md-4">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-clock-history text-cyan me-1"></i> Automation Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">Continuous telemetry polling, voice standby loops, scheduled tasks.</p>
+                    <button class="agent-btn" data-action="getAutomationsList"><i class="bi bi-clock"></i> Check Automations</button>
+                    <div class="agent-output-box mt-2" id="out-automation">// Scheduler active...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Communication Agent -->
+              <div class="col-md-6">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-chat-quote text-cyan me-1"></i> Communication Agent</span>
+                    <span class="agent-badge">STANDBY</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">WhatsApp messaging, voice dialer, contacts management.</p>
+                    <button class="agent-btn" data-cmd="open whatsapp"><i class="bi bi-whatsapp"></i> Open WhatsApp Web</button>
+                    <div class="agent-output-box mt-2" id="out-communication">// Standby for contact queries...</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Document Agent -->
+              <div class="col-md-6">
+                <div class="agent-card">
+                  <div class="agent-header d-flex justify-content-between align-items-center">
+                    <span class="agent-title"><i class="bi bi-file-earmark-text text-cyan me-1"></i> Document Agent</span>
+                    <span class="agent-badge agent-badge-active">ACTIVE</span>
+                  </div>
+                  <div class="agent-body">
+                    <p class="text-muted small mb-2">File reading, document parsing, and structured executive briefs.</p>
+                    <button class="agent-btn" data-tool="summarize_document" data-param='{"file_path": "README.md"}'><i class="bi bi-file-text"></i> Summarize README.md</button>
+                    <div class="agent-output-box mt-2" id="out-document">// Ready for documents...</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-md-1"></div>
-        </div>
-      </section>
 
-      <div id="SiriWave" class="mb-4">
-        <div class="container">
-          <div class="row">
-            <div class="col-md-12">
-              <div
-                class="d-flex justify-content-center align-items-center"
-                style="height: 100vh"
-              >
-                <div class="">
-                  <p class="text-start text-light mb-4 siri-message">
-                    Hello, I am Your Assistant
-                  </p>
-                  <div id="siri-container"></div>
+          <!-- PANEL 3: AUTOMATION PANEL -->
+          <div id="panel-automation" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-clock-history"></i> AUTOMATION & TASK SCHEDULER</h4>
+                <span class="text-muted small">Automated background triggers & periodic jobs</span>
+              </div>
+              <button id="refreshAutomationsBtn" class="btn btn-sm btn-outline-cyan"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <!-- Active System Triggers -->
+                <div class="terminal-window mb-3">
+                  <div class="terminal-header d-flex justify-content-between align-items-center">
+                    <span class="text-cyan small fw-bold"><i class="bi bi-broadcast"></i> SYSTEM SCHEDULED TRIGGERS</span>
+                    <span class="badge bg-success-subtle text-success">2 Active</span>
+                  </div>
+                  <div class="p-3">
+                    <div class="d-flex justify-content-between align-items-center p-2 mb-2 rounded border border-secondary" style="background: rgba(8, 16, 32, 0.6);">
+                      <div>
+                        <strong>System Telemetry Monitor</strong>
+                        <div class="text-muted small">Periodic poll of CPU, RAM, Disk, and active window state</div>
+                      </div>
+                      <span class="badge bg-primary">Interval: 3.5s</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded border border-secondary" style="background: rgba(8, 16, 32, 0.6);">
+                      <div>
+                        <strong>Hotword Wake-Word Standby</strong>
+                        <div class="text-muted small">Continuous background audio stream listening for "Jarvis"</div>
+                      </div>
+                      <span class="badge bg-primary">Continuous Loop</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Custom Automations Table -->
+                <div class="terminal-window">
+                  <div class="terminal-header">
+                    <span class="text-cyan small fw-bold"><i class="bi bi-list-check"></i> REGISTERED AUTOMATIONS</span>
+                  </div>
+                  <div class="p-0 table-responsive" style="max-height: 250px; overflow-y: auto;">
+                    <table class="table terminal-table mb-0">
+                      <thead>
+                        <tr>
+                          <th>NAME</th>
+                          <th>TRIGGER</th>
+                          <th>COMMAND</th>
+                          <th>STATUS</th>
+                          <th>ACTION</th>
+                        </tr>
+                      </thead>
+                      <tbody id="automationsTbody">
+                        <tr><td colspan="5" class="text-center text-muted py-3">Loading automations...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Create Automation Form -->
+              <div class="col-md-4">
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-3"><i class="bi bi-plus-circle"></i> Create Automation</h6>
+                  <div class="mb-2">
+                    <label class="form-label text-muted small">Automation Name</label>
+                    <input type="text" id="autoNameInput" class="form-control jarvis-input" placeholder="e.g. Daily Git Audit">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label text-muted small">Trigger Type</label>
+                    <select id="autoTypeSelect" class="form-control jarvis-input">
+                      <option value="interval">Periodic Interval</option>
+                      <option value="startup">On System Startup</option>
+                      <option value="voice">On Wake Word</option>
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label text-muted small">Interval (seconds)</label>
+                    <input type="number" id="autoIntervalInput" class="form-control jarvis-input" value="300">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label text-muted small">JARVIS Command</label>
+                    <input type="text" id="autoCmdInput" class="form-control jarvis-input" placeholder="e.g. git status">
+                  </div>
+                  <button id="saveAutomationBtn" class="btn btn-outline-cyan w-100"><i class="bi bi-save"></i> Register Task</button>
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- PANEL 4: BROWSER PANEL -->
+          <div id="panel-browser" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-globe2"></i> BROWSER & WEB RESEARCH</h4>
+                <span class="text-muted small">Automated search dispatch and clean article scraping</span>
+              </div>
+            </div>
+            <div class="row g-3">
+              <!-- Web Search & Launch -->
+              <div class="col-md-6">
+                <div class="agent-card p-3 mb-3">
+                  <h6 class="text-cyan mb-2"><i class="bi bi-search"></i> Web Search Dispatch</h6>
+                  <div class="input-group mb-2">
+                    <select id="searchEngineSelect" class="form-select jarvis-input" style="max-width: 130px;">
+                      <option value="google">Google</option>
+                      <option value="youtube">YouTube</option>
+                      <option value="duckduckgo">DuckDuckGo</option>
+                      <option value="github">GitHub</option>
+                      <option value="wikipedia">Wikipedia</option>
+                      <option value="bing">Bing</option>
+                    </select>
+                    <input type="text" id="browserSearchInput" class="form-control jarvis-input" placeholder="Search query...">
+                    <button id="browserSearchBtn" class="btn btn-outline-cyan"><i class="bi bi-box-arrow-up-right"></i> Search</button>
+                  </div>
+                  <small class="text-muted">Opens search results directly in your system default browser.</small>
+                </div>
+
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-2"><i class="bi bi-link-45deg"></i> Direct URL Launcher</h6>
+                  <div class="input-group mb-2">
+                    <input type="text" id="directUrlInput" class="form-control jarvis-input" placeholder="e.g. github.com">
+                    <button id="directUrlBtn" class="btn btn-outline-cyan"><i class="bi bi-box-arrow-up-right"></i> Open URL</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Article Scraper & AI Summarizer -->
+              <div class="col-md-6">
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-2"><i class="bi bi-file-earmark-text"></i> Scrape & Summarize Webpage</h6>
+                  <div class="input-group mb-3">
+                    <input type="text" id="scrapeUrlInput" class="form-control jarvis-input" placeholder="https://en.wikipedia.org/wiki/Artificial_intelligence">
+                    <button id="scrapeUrlBtn" class="btn btn-outline-cyan"><i class="bi bi-cpu"></i> Summarize</button>
+                  </div>
+                  <div class="agent-output-box" id="scrapeResultBox" style="max-height: 280px; height: 280px;">// Extracted article summaries will appear here...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 5: FILES PANEL -->
+          <div id="panel-files" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-folder2-open"></i> FILE SYSTEM & WORKSPACE</h4>
+                <span class="text-muted small">Directory navigation, code preview, and search tools</span>
+              </div>
+              <div class="d-flex gap-2">
+                <button id="refreshFilesBtn" class="btn btn-sm btn-outline-cyan"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                <button id="newFileBtn" class="btn btn-sm btn-outline-cyan"><i class="bi bi-file-earmark-plus"></i> New File</button>
+                <button id="newFolderBtn" class="btn btn-sm btn-outline-cyan"><i class="bi bi-folder-plus"></i> New Folder</button>
+              </div>
+            </div>
+
+            <!-- Path Bar & Search -->
+            <div class="p-2 mb-3 rounded d-flex gap-2" style="background: var(--jarvis-card); border: 1px solid var(--jarvis-border);">
+              <div class="input-group flex-grow-1">
+                <span class="input-group-text bg-dark border-secondary text-cyan font-monospace small"><i class="bi bi-folder"></i></span>
+                <input type="text" id="currentFolderInput" class="form-control jarvis-input font-monospace small" value=".">
+                <button id="browseFolderBtn" class="btn btn-outline-cyan">Go</button>
+              </div>
+              <div class="input-group flex-grow-1">
+                <input type="text" id="fileSearchKeyword" class="form-control jarvis-input small" placeholder="Search filenames in folder...">
+                <button id="searchFilesBtn" class="btn btn-outline-cyan"><i class="bi bi-search"></i> Search</button>
+              </div>
+            </div>
+
+            <!-- Split View: File List on Left, Preview on Right -->
+            <div class="row g-3">
+              <div class="col-md-5">
+                <div class="terminal-window">
+                  <div class="terminal-header d-flex justify-content-between align-items-center">
+                    <span class="text-cyan small fw-bold"><i class="bi bi-files"></i> DIRECTORY CONTENTS</span>
+                    <span id="fileCountBadge" class="badge bg-secondary">-- items</span>
+                  </div>
+                  <div class="p-0 table-responsive" style="max-height: 440px; overflow-y: auto;">
+                    <table class="table terminal-table mb-0">
+                      <thead>
+                        <tr>
+                          <th>NAME</th>
+                          <th>TYPE</th>
+                          <th>SIZE</th>
+                          <th>ACTION</th>
+                        </tr>
+                      </thead>
+                      <tbody id="filesTableBody">
+                        <tr><td colspan="4" class="text-center text-muted py-3">Loading directory...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-7">
+                <div class="terminal-window">
+                  <div class="terminal-header d-flex justify-content-between align-items-center">
+                    <span class="text-cyan small fw-bold"><i class="bi bi-code-square"></i> FILE PREVIEW: <span id="previewFileName" class="text-light">Select a file</span></span>
+                  </div>
+                  <div class="file-preview-pane" id="filePreviewBox">// Click "Read" on any file to inspect content...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 6: TERMINAL PANEL -->
+          <div id="panel-terminal" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-terminal"></i> SYSTEM TERMINAL & PROCESS SUPERVISOR</h4>
+                <span class="text-muted small">Real shell execution with dangerous command safeguards</span>
+              </div>
+              <div class="d-flex gap-2">
+                <button id="clearTerminalBtn" class="btn btn-sm btn-outline-cyan"><i class="bi bi-eraser"></i> Clear Screen</button>
+                <button id="refreshProcessesBtn" class="btn btn-sm btn-outline-cyan"><i class="bi bi-list-task"></i> Refresh Processes</button>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-7">
+                <!-- Terminal Screen -->
+                <div class="terminal-screen mb-3" id="terminalScreenOutput">
+JARVIS AI OS Terminal [Version 2.0.0]
+(c) Google DeepMind Agentic Pair Architecture. All rights reserved.
+
+Type any command (e.g. 'dir', 'git status', 'python --version') and press Execute.
+Dangerous commands require explicit confirmation.
+                </div>
+                <!-- Command Input Box -->
+                <div class="input-group">
+                  <span class="input-group-text bg-black border-secondary text-cyan font-monospace">PS &gt;</span>
+                  <input type="text" id="terminalInputBox" class="form-control jarvis-input font-monospace" placeholder="Enter shell command...">
+                  <button id="executeTerminalBtn" class="btn btn-outline-cyan"><i class="bi bi-play-fill"></i> Execute</button>
+                </div>
+              </div>
+
+              <!-- Process Supervisor -->
+              <div class="col-md-5">
+                <div class="terminal-window">
+                  <div class="terminal-header d-flex justify-content-between align-items-center">
+                    <span class="text-cyan small fw-bold"><i class="bi bi-cpu"></i> RUNNING PROCESSES</span>
+                    <span class="badge bg-secondary" id="processCountBadge">tasklist</span>
+                  </div>
+                  <div class="p-0 table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="table terminal-table mb-0">
+                      <thead>
+                        <tr>
+                          <th>PROCESS</th>
+                          <th>PID</th>
+                          <th>MEM USAGE</th>
+                        </tr>
+                      </thead>
+                      <tbody id="processTbody">
+                        <tr><td colspan="3" class="text-center text-muted py-3">Click 'Refresh Processes' to inspect</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 7: GITHUB PANEL -->
+          <div id="panel-github" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-github"></i> GITHUB & GIT WORKSPACE</h4>
+                <span class="text-muted small">Repository status, diff inspection, commit guards, and test runner</span>
+              </div>
+              <button id="refreshGitBtn" class="btn btn-sm btn-outline-cyan"><i class="bi bi-arrow-clockwise"></i> Refresh Status</button>
+            </div>
+
+            <!-- Repo Telemetry Cards -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <div class="metric-card">
+                  <div class="metric-title">REPOSITORY</div>
+                  <div class="metric-value fs-4 text-cyan" id="gitRepoName">--</div>
+                  <div class="metric-sub" id="gitRepoPath">--</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="metric-card">
+                  <div class="metric-title">ACTIVE BRANCH</div>
+                  <div class="metric-value fs-4 text-light" id="gitBranchName"><i class="bi bi-git text-cyan"></i> --</div>
+                  <div class="metric-sub">Up to date with origin</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="metric-card">
+                  <div class="metric-title">WORKING TREE</div>
+                  <div class="metric-value fs-4" id="gitChangesCount">--</div>
+                  <div class="metric-sub" id="gitChangesSummary">Inspecting changes...</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <!-- Git Diff & Commit Form -->
+              <div class="col-md-8">
+                <div class="terminal-window mb-3">
+                  <div class="terminal-header">
+                    <span class="text-cyan small fw-bold"><i class="bi bi-file-earmark-diff"></i> UNSTAGED GIT DIFF</span>
+                  </div>
+                  <div class="file-preview-pane" id="gitDiffBox" style="height: 220px;">// No unstaged diff.</div>
+                </div>
+
+                <!-- Create Commit Box -->
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-2"><i class="bi bi-check2-circle"></i> Create Commit (Confirmation Guarded)</h6>
+                  <div class="input-group mb-2">
+                    <input type="text" id="commitMsgInput" class="form-control jarvis-input" placeholder="Enter commit message...">
+                    <button id="createCommitBtn" class="btn btn-outline-cyan"><i class="bi bi-git"></i> Commit</button>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="confirmCommitCheckbox">
+                    <label class="form-check-label text-muted small" for="confirmCommitCheckbox">
+                      I explicitly approve staging all changes and creating this commit.
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Commit History & Test Runner -->
+              <div class="col-md-4">
+                <div class="terminal-window mb-3">
+                  <div class="terminal-header">
+                    <span class="text-cyan small fw-bold"><i class="bi bi-clock-history"></i> RECENT COMMITS</span>
+                  </div>
+                  <div class="p-2" id="gitLogList" style="max-height: 200px; overflow-y: auto;">
+                    <div class="text-muted small">Loading commit log...</div>
+                  </div>
+                </div>
+
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-2"><i class="bi bi-play-circle"></i> Automated Test Suite</h6>
+                  <p class="text-muted small mb-2">Run test verification across agents and router.</p>
+                  <button id="runTestsBtn" class="btn btn-outline-cyan w-100 mb-2"><i class="bi bi-check-all"></i> Run Router Tests</button>
+                  <div class="agent-output-box" id="testResultBox" style="max-height: 90px;">// Ready to run tests...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 8: GOOGLE WORKSPACE PANEL -->
+          <div id="panel-google" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-grid-3x3-gap"></i> GOOGLE WORKSPACE INTEGRATIONS</h4>
+                <span class="text-muted small">Gmail, Google Calendar, Drive, Docs, and Sheets status</span>
+              </div>
+              <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> Credentials Required</span>
+            </div>
+
+            <!-- Honest Status Alert -->
+            <div class="alert alert-dark border border-warning d-flex align-items-center gap-3 p-3 mb-4 rounded" style="background: rgba(30, 20, 5, 0.7);">
+              <i class="bi bi-shield-lock text-warning fs-3"></i>
+              <div>
+                <strong class="text-warning">Google Workspace Integration Not Configured</strong>
+                <div class="text-muted small">Real OAuth 2.0 authentication credentials are required to interface with Gmail, Calendar, and Drive. To prevent deceptive mock data, this panel will become active once credentials are provided in your <code>.env</code> file.</div>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="agent-card p-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-light"><i class="bi bi-envelope text-cyan me-1"></i> Gmail</span>
+                    <span class="badge bg-secondary">Not Configured</span>
+                  </div>
+                  <p class="text-muted small">Read unread messages, draft replies, send emails via Gmail API.</p>
+                  <button class="btn btn-sm btn-outline-secondary w-100" disabled>Connect Gmail</button>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="agent-card p-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-light"><i class="bi bi-calendar-event text-cyan me-1"></i> Calendar</span>
+                    <span class="badge bg-secondary">Not Configured</span>
+                  </div>
+                  <p class="text-muted small">Query upcoming appointments, schedule events, reminders.</p>
+                  <button class="btn btn-sm btn-outline-secondary w-100" disabled>Connect Calendar</button>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="agent-card p-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-light"><i class="bi bi-cloud text-cyan me-1"></i> Google Drive</span>
+                    <span class="badge bg-secondary">Not Configured</span>
+                  </div>
+                  <p class="text-muted small">Search cloud files, upload documents, download shared folders.</p>
+                  <button class="btn btn-sm btn-outline-secondary w-100" disabled>Connect Drive</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 9: AI TOOLS PANEL -->
+          <div id="panel-aitools" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-stars"></i> ADVANCED AI COGNITIVE TOOLS</h4>
+                <span class="text-muted small">Specialized LLM generation, document summarization, and deep research</span>
+              </div>
+              <span class="badge bg-primary" id="aiToolsProviderBadge">Groq / OpenAI</span>
+            </div>
+
+            <div class="row g-3">
+              <!-- Tool Selector Tabs -->
+              <div class="col-md-4">
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-3"><i class="bi bi-gear-wide"></i> Select AI Workbench</h6>
+                  <div class="d-flex flex-column gap-2 mb-3">
+                    <button class="btn btn-sm btn-outline-cyan text-start ai-tool-tab active" data-tool="summarize"><i class="bi bi-file-text"></i> Executive Summarizer</button>
+                    <button class="btn btn-sm btn-outline-cyan text-start ai-tool-tab" data-tool="code"><i class="bi bi-code-square"></i> Senior Code Architect</button>
+                    <button class="btn btn-sm btn-outline-cyan text-start ai-tool-tab" data-tool="research"><i class="bi bi-binoculars"></i> Deep Research Brief</button>
+                    <button class="btn btn-sm btn-outline-cyan text-start ai-tool-tab" data-tool="chat"><i class="bi bi-chat-dots"></i> Neural Chat Assistant</button>
+                  </div>
+                  <label class="form-label text-muted small">Prompt / Input Text</label>
+                  <textarea id="aiToolInputBox" class="form-control jarvis-input mb-3" rows="6" placeholder="Enter text or prompt for analysis..."></textarea>
+                  <button id="runAiToolBtn" class="btn btn-outline-cyan w-100"><i class="bi bi-lightning"></i> Process with AI Core</button>
+                </div>
+              </div>
+
+              <!-- Output Box -->
+              <div class="col-md-8">
+                <div class="terminal-window">
+                  <div class="terminal-header d-flex justify-content-between align-items-center">
+                    <span class="text-cyan small fw-bold"><i class="bi bi-cpu"></i> AI COGNITIVE OUTPUT</span>
+                    <button id="copyAiOutputBtn" class="btn btn-sm text-cyan py-0"><i class="bi bi-clipboard"></i> Copy</button>
+                  </div>
+                  <div class="file-preview-pane" id="aiToolOutputBox" style="height: 440px;">// Output generated by JARVIS AI core will appear here...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 10: VISION PANEL -->
+          <div id="panel-vision" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-eye"></i> COMPUTER VISION & PERCEPTION</h4>
+                <span class="text-muted small">Screen metrics, screenshot capture, webcam snapshot, and OCR</span>
+              </div>
+              <button id="refreshVisionBtn" class="btn btn-sm btn-outline-cyan"><i class="bi bi-arrow-clockwise"></i> Refresh Display</button>
+            </div>
+
+            <!-- Vision Diagnostics -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <div class="metric-card">
+                  <div class="metric-title">DISPLAY RESOLUTION</div>
+                  <div class="metric-value fs-4 text-cyan" id="visionResVal">--x--</div>
+                  <div class="metric-sub" id="visionMonitorsVal">-- Display Monitor(s)</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="metric-card">
+                  <div class="metric-title">FOCUSED WINDOW</div>
+                  <div class="metric-value fs-5 text-light text-truncate" id="visionWindowVal">--</div>
+                  <div class="metric-sub">Active foreground window</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="metric-card">
+                  <div class="metric-title">CAMERA PERCEPTION</div>
+                  <div class="metric-value fs-4 text-cyan">OpenCV Active</div>
+                  <div class="metric-sub">Camera index 0 verified</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <!-- Capture Actions -->
+              <div class="col-md-4">
+                <div class="agent-card p-3 mb-3">
+                  <h6 class="text-cyan mb-3"><i class="bi bi-camera"></i> Instant Capture</h6>
+                  <button id="visionCaptureScreenBtn" class="agent-btn mb-2"><i class="bi bi-display"></i> Capture Desktop Screen</button>
+                  <button id="visionCaptureWebcamBtn" class="agent-btn mb-2"><i class="bi bi-webcam"></i> Capture Webcam Frame</button>
+                </div>
+
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-2"><i class="bi bi-search"></i> Inspect Image with AI Vision</h6>
+                  <input type="text" id="visionImagePathInput" class="form-control jarvis-input mb-2" placeholder="Path to image file...">
+                  <input type="text" id="visionImagePromptInput" class="form-control jarvis-input mb-3" placeholder="e.g. Extract text from image">
+                  <button id="visionAnalyzeBtn" class="btn btn-outline-cyan w-100"><i class="bi bi-cpu"></i> Analyze Image</button>
+                </div>
+              </div>
+
+              <!-- Output & Gallery -->
+              <div class="col-md-8">
+                <div class="terminal-window">
+                  <div class="terminal-header">
+                    <span class="text-cyan small fw-bold"><i class="bi bi-image"></i> PERCEPTION TELEMETRY & ANALYSIS</span>
+                  </div>
+                  <div class="p-3">
+                    <div class="agent-output-box mb-3" id="visionAnalysisOutputBox" style="max-height: 180px; height: 180px;">// Vision analysis outcomes...</div>
+                    <h6 class="text-muted small mb-2">Recent Captured Artifacts:</h6>
+                    <div id="visionThumbnailsList" class="d-flex flex-wrap gap-2 text-muted small">No captures recorded yet.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 11: MEMORY PANEL -->
+          <div id="panel-memory" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-database"></i> PERSISTENT COGNITIVE MEMORY</h4>
+                <span class="text-muted small">Long-term facts, user preferences, and project context</span>
+              </div>
+              <button id="refreshMemoryBtn" class="btn btn-sm btn-outline-cyan"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-8">
+                <!-- Filter Search -->
+                <div class="input-group mb-3">
+                  <span class="input-group-text bg-dark border-secondary text-cyan"><i class="bi bi-search"></i></span>
+                  <input type="text" id="memorySearchInput" class="form-control jarvis-input" placeholder="Search stored memories...">
+                </div>
+
+                <!-- Memory Cards List -->
+                <div class="terminal-window p-3" style="max-height: 450px; overflow-y: auto;">
+                  <div id="memoryCardsList" class="d-flex flex-column gap-2">
+                    <div class="text-muted small">Loading persistent memories...</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Teach JARVIS Form -->
+              <div class="col-md-4">
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-3"><i class="bi bi-plus-circle"></i> Teach JARVIS a Fact</h6>
+                  <div class="mb-2">
+                    <label class="form-label text-muted small">Key / Topic</label>
+                    <input type="text" id="memoryKeyInput" class="form-control jarvis-input" placeholder="e.g. programming_language">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label text-muted small">Category</label>
+                    <select id="memoryCategorySelect" class="form-control jarvis-input">
+                      <option value="user_fact">User Fact</option>
+                      <option value="preference">Preference</option>
+                      <option value="project_context">Project Context</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label text-muted small">Detail / Content</label>
+                    <textarea id="memoryValInput" class="form-control jarvis-input" rows="3" placeholder="e.g. Python and TypeScript"></textarea>
+                  </div>
+                  <button id="saveMemoryBtn" class="btn btn-outline-cyan w-100"><i class="bi bi-save"></i> Commit to Memory</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 12: SETTINGS PANEL -->
+          <div id="panel-settings" class="jarvis-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h4 class="text-cyan fw-bold mb-0"><i class="bi bi-gear"></i> SYSTEM SETTINGS & CONFIGURATION</h4>
+                <span class="text-muted small">AI models, voice parameters, security checks, and diagnostics</span>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <!-- AI & Model Config -->
+              <div class="col-md-6">
+                <div class="agent-card p-3 mb-3">
+                  <h6 class="text-cyan mb-3"><i class="bi bi-cpu"></i> AI Intelligence Provider</h6>
+                  <div class="mb-2">
+                    <label class="form-label text-muted small">Active Provider</label>
+                    <div class="p-2 border border-secondary rounded d-flex justify-content-between align-items-center mb-2" style="background: rgba(8, 16, 32, 0.6);">
+                      <span id="settingsProviderText" class="text-cyan fw-bold">Groq / OpenAI (Multi-provider)</span>
+                      <span class="badge bg-primary">v2.0 Agentic</span>
+                    </div>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label text-muted small">Primary Model</label>
+                    <div class="p-2 border border-secondary rounded font-monospace small text-light" id="settingsModelText">llama-3.3-70b-versatile</div>
+                  </div>
+                </div>
+
+                <!-- Voice Engine Config -->
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-3"><i class="bi bi-volume-up"></i> Voice & TTS Engine</h6>
+                  <div class="mb-3">
+                    <label class="form-label text-muted small">Speech Rate (WPM)</label>
+                    <input type="range" class="form-range" id="settingsVoiceSlider" min="130" max="220" value="174">
+                    <div class="d-flex justify-content-between text-muted small">
+                      <span>Slow (130)</span>
+                      <span id="settingsVoiceRateVal" class="text-cyan">174 WPM</span>
+                      <span>Fast (220)</span>
+                    </div>
+                  </div>
+                  <button id="settingsTestVoiceBtn" class="btn btn-outline-cyan w-100"><i class="bi bi-volume-up"></i> Test Voice Synthesis</button>
+                </div>
+              </div>
+
+              <!-- Security, Wake Word & Diagnostics -->
+              <div class="col-md-6">
+                <div class="agent-card p-3 mb-3">
+                  <h6 class="text-cyan mb-3"><i class="bi bi-shield-check"></i> Security & Permissions</h6>
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="dangerGuardSwitch" checked>
+                    <label class="form-check-label text-light small" for="dangerGuardSwitch">Require confirmation for dangerous terminal commands</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="commitGuardSwitch" checked>
+                    <label class="form-check-label text-light small" for="commitGuardSwitch">Require explicit approval before Git commits</label>
+                  </div>
+                </div>
+
+                <div class="agent-card p-3">
+                  <h6 class="text-cyan mb-3"><i class="bi bi-hdd-network"></i> System Paths & Diagnostics</h6>
+                  <div class="p-2 border border-secondary rounded font-monospace small text-muted" id="settingsSysInfoBox">
+                    Loading diagnostics...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Danger Command Confirmation Modal -->
+    <div class="modal fade" id="dangerConfirmModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(18, 5, 8, 0.96); border: 1px solid #ff4444; color: #fff;">
+          <div class="modal-header border-danger">
+            <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle-fill"></i> DANGEROUS COMMAND DETECTED</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p id="dangerModalMsg">This command has been classified as potentially destructive.</p>
+            <div class="p-2 border border-danger rounded font-monospace small bg-black text-danger" id="dangerModalCmd"></div>
+            <p class="small text-muted mt-2">Are you sure you want to proceed with execution?</p>
+          </div>
+          <div class="modal-footer border-danger">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmDangerBtn">Execute Anyway</button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- New File / Folder Modal -->
+    <div class="modal fade" id="newFileModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(8, 16, 32, 0.96); border: 1px solid var(--jarvis-cyan); color: #fff;">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title text-cyan" id="newFileModalTitle">Create File / Folder</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="newFileType" value="file">
+            <div class="mb-2">
+              <label class="form-label text-muted small" id="newFilePathLabel">Path / Name</label>
+              <input type="text" id="newFilePathInput" class="form-control jarvis-input font-monospace">
+            </div>
+            <div class="mb-2" id="newFileContentGroup">
+              <label class="form-label text-muted small">Initial Content</label>
+              <textarea id="newFileContentInput" class="form-control jarvis-input font-monospace" rows="4"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-outline-cyan" id="confirmCreateFileBtn">Create</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <!--Jquery  -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
@@ -520,9 +1517,64 @@
       type="module"
     ></script>
 
-     <div id="chat-canvas-body" class="offcanvas-body"></div>
-    <script src="main.js"></script>
+    <!-- Futuristic Neural Stream Offcanvas Chat -->
+    <div class="offcanvas offcanvas-end jarvis-offcanvas" tabindex="-1" id="offcanvasChat" aria-labelledby="offcanvasChatLabel">
+      <div class="offcanvas-header border-bottom border-secondary d-flex justify-content-between align-items-center">
+        <h5 class="offcanvas-title text-cyan mb-0" id="offcanvasChatLabel"><i class="bi bi-terminal-split"></i> NEURAL STREAM</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div id="chat-canvas-body" class="offcanvas-body p-3" style="overflow-y: auto;">
+        <!-- Dynamic message history -->
+      </div>
+      <div class="offcanvas-footer p-3 border-top border-secondary">
+        <div class="input-group">
+          <input type="text" id="drawerChatInput" class="form-control jarvis-input" placeholder="Transmit command...">
+          <button class="btn btn-outline-cyan" id="drawerSendBtn"><i class="bi bi-send"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Futuristic Settings Modal -->
+    <div class="modal fade" id="SettingsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(10, 18, 35, 0.95); border: 1px solid var(--jarvis-cyan); backdrop-filter: blur(12px); color: #fff;">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title text-cyan"><i class="bi bi-sliders"></i> JARVIS OS CONFIGURATION</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Active LLM Intelligence Provider</label>
+              <div class="p-2 border border-secondary rounded d-flex justify-content-between align-items-center">
+                <span id="llmProviderDisplay" class="fw-bold text-cyan">Groq / OpenAI (Multi-provider)</span>
+                <span class="badge bg-primary">v2.0 Agentic</span>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small">Speech Rate (WPM)</label>
+              <input type="range" class="form-range" id="voiceRateSlider" min="130" max="220" value="174">
+              <div class="d-flex justify-content-between text-muted small">
+                <span>Slow (130)</span>
+                <span id="voiceRateVal" class="text-cyan">174 WPM</span>
+                <span>Fast (220)</span>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small">System Information</label>
+              <div class="p-2 border border-secondary rounded font-monospace small text-muted" id="sysDetailsBox">
+                Loading telemetry...
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-outline-cyan" id="testVoiceBtn"><i class="bi bi-volume-up"></i> Test Voice</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="text/javascript" src="/eel.js"></script>
     <script src="controller.js"></script>
+    <script src="main.js"></script>
   </body>
 </html>

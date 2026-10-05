@@ -24,21 +24,31 @@ import pyautogui
 import pywhatkit as kit
 import pygame
 from backend.command import speak
-from backend.config import ASSISTANT_NAME
+from backend.config import ASSISTANT_NAME, START_SOUND_PATH
 import sqlite3
 
 from backend.helper import extract_yt_term, remove_words
 conn = sqlite3.connect("jarvis.db")
 cursor = conn.cursor()
-# Initialize pygame mixer
-pygame.mixer.init()
+# Initialize pygame mixer safely
+try:
+    if not pygame.mixer.get_init():
+        pygame.mixer.init()
+except Exception as e:
+    print(f"Warning: pygame mixer init error: {e}")
 
 # Define the function to play sound
 @eel.expose
 def play_assistant_sound():
-    sound_file = r"C:\Users\ranje\OneDrive\Desktop\Jarvis\frontend\assets\audio\start_sound.mp3"
-    pygame.mixer.music.load(sound_file)
-    pygame.mixer.music.play()
+    try:
+        sound_file = str(START_SOUND_PATH)
+        if os.path.exists(sound_file):
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+            pygame.mixer.music.load(sound_file)
+            pygame.mixer.music.play()
+    except Exception as e:
+        print(f"play_assistant_sound error: {e}")
     
     
 def openCommand(query):
@@ -85,37 +95,90 @@ def PlayYoutube(query):
     kit.playonyt(search_term)
 
 
-def hotword():
-    porcupine=None
-    paud=None
-    audio_stream=None
+def _trigger_hotword_event():
+    """
+    Simulate Win+J keystroke to summon JARVIS UI without PyAutoGUI failsafe issues.
+    """
     try:
-       
-        # pre trained keywords    
-        porcupine=pvporcupine.create(keywords=["jarvis","alexa"]) 
-        paud=pyaudio.PyAudio()
-        audio_stream=paud.open(rate=porcupine.sample_rate,channels=1,format=pyaudio.paInt16,input=True,frames_per_buffer=porcupine.frame_length)
-        
-        # loop for streaming
-        while True:
-            keyword=audio_stream.read(porcupine.frame_length)
-            keyword=struct.unpack_from("h"*porcupine.frame_length,keyword)
+        import ctypes
+        user32 = ctypes.windll.user32
+        VK_LWIN = 0x5B
+        VK_J = 0x4A
+        # Press Win+J
+        user32.keybd_event(VK_LWIN, 0, 0, 0)
+        user32.keybd_event(VK_J, 0, 0, 0)
+        time.sleep(0.05)
+        user32.keybd_event(VK_J, 0, 2, 0)
+        user32.keybd_event(VK_LWIN, 0, 2, 0)
+    except Exception as e:
+        print(f"Hotword keystroke trigger failed: {e}")
 
-            # processing keyword comes from mic 
-            keyword_index=porcupine.process(keyword)
 
-            # checking first keyword detetcted for not
-            if keyword_index>=0:
-                print("hotword detected")
+def _fallback_speech_hotword():
+    """
+    Fallback hotword detection using SpeechRecognition when Porcupine access key is not set.
+    """
+    print("Hotword: Running speech recognition standby (say 'Jarvis')...")
+    import speech_recognition as sr
+    r = sr.Recognizer()
+    r.pause_threshold = 0.8
 
-                # pressing shorcut key win+j
-                import pyautogui as autogui
-                autogui.keyDown("win")
-                autogui.press("j")
+    while True:
+        try:
+            with sr.Microphone() as source:
+                r.adjust_for_ambient_noise(source, duration=0.5)
+                audio = r.listen(source, timeout=6, phrase_time_limit=4)
+            text = r.recognize_google(audio, language="en-US").lower()
+            if "jarvis" in text or "alexa" in text:
+                print(f"Hotword detected: '{text}'")
+                _trigger_hotword_event()
                 time.sleep(2)
-                autogui.keyUp("win")
-                
-    except:
+        except (sr.WaitTimeoutError, sr.UnknownValueError):
+            continue
+        except Exception as e:
+            time.sleep(1)
+
+
+def hotword():
+    """
+    Continuous hotword detector. Uses Picovoice Porcupine if PORCUPINE_ACCESS_KEY is set,
+    otherwise falls back to SpeechRecognition standby listener.
+    """
+    access_key = os.getenv("PORCUPINE_ACCESS_KEY")
+    if not access_key:
+        print("Notice: PORCUPINE_ACCESS_KEY not configured in .env.")
+        _fallback_speech_hotword()
+        return
+
+    porcupine = None
+    paud = None
+    audio_stream = None
+    try:
+        porcupine = pvporcupine.create(access_key=access_key, keywords=["jarvis", "alexa"])
+        paud = pyaudio.PyAudio()
+        audio_stream = paud.open(
+            rate=porcupine.sample_rate,
+            channels=1,
+            format=pyaudio.paInt16,
+            input=True,
+            frames_per_buffer=porcupine.frame_length
+        )
+
+        print("Hotword: Porcupine engine active. Listening for 'Jarvis'...")
+        while True:
+            keyword = audio_stream.read(porcupine.frame_length, exception_on_overflow=False)
+            keyword = struct.unpack_from("h" * porcupine.frame_length, keyword)
+            keyword_index = porcupine.process(keyword)
+
+            if keyword_index >= 0:
+                print("Hotword detected via Porcupine!")
+                _trigger_hotword_event()
+                time.sleep(2)
+
+    except Exception as e:
+        print(f"Porcupine hotword warning ({e}). Switching to speech fallback.")
+        _fallback_speech_hotword()
+    finally:
         if porcupine is not None:
             porcupine.delete()
         if audio_stream is not None:
@@ -188,33 +251,13 @@ def whatsApp(Phone, message, flag, name):
 
 def chatBot(query):
     try:
-        client = OpenAI(
-    api_key=os.environ["GROQ_API_KEY"],
-    base_url="https://api.groq.com/openai/v1",
-)
-
-        response = client.responses.create(
-            model="openai/gpt-oss-20b",
-            instructions=(
-                "You are Jarvis, a helpful personal voice assistant. "
-                "Reply clearly and concisely."
-            ),
-            input=query,
-        )
-
-        answer = response.output_text.strip()
+        from backend.services.llm_service import llm_service
+        answer = llm_service.generate_chat_response(query)
         eel.receiverText(answer)
         speak(answer)
         return answer
-
     except Exception as e:
-        import traceback
-
-        print(f"OpenAI error type: {type(e).__name__}")
-        print(f"OpenAI error detail: {repr(e)}")
-        print(f"Underlying cause: {repr(e.__cause__)}")
-        traceback.print_exc()
-
+        print(f"chatBot error: {e}")
         message = "Sorry, I could not answer that right now."
         eel.receiverText(message)
         speak(message)

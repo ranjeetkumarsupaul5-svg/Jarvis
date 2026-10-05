@@ -1,3 +1,4 @@
+import threading
 import eel
 from backend.auth import recoganize
 from backend.feature import *
@@ -9,14 +10,8 @@ def start():
 
     play_assistant_sound()
 
-    @eel.expose
-    def init():
-        eel.hideLoader()
-        speak("Welcome to Jarvis")
-        speak("Ready for Face Authentication")
-
+    def _async_face_auth():
         flag = recoganize.AuthenticateFace()
-
         if flag == 1:
             speak("Face recognized successfully")
             eel.hideFaceAuth()
@@ -24,8 +19,29 @@ def start():
             speak("Welcome to Your Assistant")
             eel.hideStart()
             play_assistant_sound()
+        elif flag == -1:
+            # Explicitly cancelled/bypassed by user
+            pass
         else:
-            speak("Face not recognized. Please try again")
+            speak("Face not recognized. Click Enter Desktop OS to proceed.")
+
+    @eel.expose
+    def init():
+        eel.hideLoader()
+        speak("Welcome to Jarvis")
+        speak("Ready for Face Authentication")
+
+        auth_thread = threading.Thread(target=_async_face_auth, daemon=True)
+        auth_thread.start()
+
+    @eel.expose
+    def bypassAuth():
+        recoganize.cancel_authentication()
+        speak("Authentication bypassed. Welcome to Jarvis")
+        eel.hideFaceAuth()
+        eel.hideFaceAuthSuccess()
+        eel.hideStart()
+        play_assistant_sound()
 
     eel.start(
         "index.html",

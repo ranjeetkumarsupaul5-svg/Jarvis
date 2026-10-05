@@ -1,11 +1,24 @@
-from sys import flags
+import threading
 import time
 import cv2
 import pyautogui as p
 
+_auth_cancel_event = threading.Event()
+
+
+def cancel_authentication():
+    """Signals the running face authentication loop to exit cleanly."""
+    _auth_cancel_event.set()
+
+
+def reset_authentication_state():
+    """Resets the cancellation event for fresh auth runs."""
+    _auth_cancel_event.clear()
+
 
 def AuthenticateFace():
     flag = 0
+    _auth_cancel_event.clear()
 
     recognizer = cv2.face.LBPHFaceRecognizer_create()
     recognizer.read(r"backend\auth\trainer\trainer.yml")
@@ -27,6 +40,10 @@ def AuthenticateFace():
     matches_required = 8
 
     while True:
+        if _auth_cancel_event.is_set():
+            flag = -1
+            break
+
         ret, img = cam.read()
 
         if not ret:

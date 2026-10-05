@@ -9,3 +9,12 @@ cookies.json
 backend/cookies.json
 backend/*.json
 .vscode/
+@"
+
+# Runtime-generated files
+artifacts/
+screenshots/
+
+# Temporary test/debug files
+notepad test_terminal_smoke.py
+"@ | Add-Content .gitignore
