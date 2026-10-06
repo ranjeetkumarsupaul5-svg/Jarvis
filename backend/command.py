@@ -44,44 +44,133 @@ class VoiceEngine:
     def _init_engine(self):
         self.engine = None
         self.speech_lock = threading.Lock()
+        self.tts_backend = "none"
+
+        # Try pyttsx3 first
         try:
             self.engine = pyttsx3.init('sapi5')
+
             voices = self.engine.getProperty('voices')
             if voices:
                 self.engine.setProperty('voice', voices[0].id)
+
             self.engine.setProperty('rate', 174)
             self.engine.setProperty('volume', 1.0)
+
+            self.tts_backend = "pyttsx3"
+            print("TTS: pyttsx3/SAPI5 initialized successfully.")
+            return
+
         except Exception as e:
             print(f"Warning: pyttsx3 initialization failed: {e}")
             self.engine = None
+
+        # Windows built-in Speech fallback
+        try:
+            import subprocess
+
+            test_cmd = [
+                "powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                (
+                    "Add-Type -AssemblyName System.Speech; "
+                    "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+                    "$s.Dispose()"
+                )
+            ]
+
+            result = subprocess.run(
+                test_cmd,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+
+            if result.returncode == 0:
+                self.tts_backend = "windows"
+                print("TTS: Windows Speech fallback initialized successfully.")
+            else:
+                print("TTS: Windows Speech fallback unavailable.")
+
+        except Exception as e:
+            print(f"TTS fallback initialization failed: {e}")
 
     def speak(self, text: str):
         if not text:
             return
 
         text = str(text).strip()
+
+        if not text:
+            return
+
         print(f"JARVIS: {text}")
 
-        # Update Eel UI display
+        # Update UI
         safe_eel("DisplayMessage", text)
 
         with self.speech_lock:
-            if self.engine is not None:
+
+            # -------------------------------------------------
+            # Backend 1: pyttsx3
+            # -------------------------------------------------
+            if self.tts_backend == "pyttsx3" and self.engine is not None:
                 try:
                     self.engine.say(text)
                     self.engine.runAndWait()
+
                 except Exception as e:
                     print(f"Speech synthesis error: {e}")
-                    try:
-                        self._init_engine()
-                    except Exception:
-                        pass
-            else:
-                time.sleep(0.05 * len(text.split()))
 
-        # Update Eel UI receiver transcript
+                    # Switch to Windows fallback
+                    self.engine = None
+                    self.tts_backend = "windows"
+
+            # -------------------------------------------------
+            # Backend 2: Windows built-in Speech
+            # -------------------------------------------------
+            if self.tts_backend == "windows":
+                try:
+                    import subprocess
+
+                    # Escape PowerShell single quotes
+                    safe_text = text.replace("'", "''")
+
+                    ps_command = (
+                        "Add-Type -AssemblyName System.Speech; "
+                        "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+                        "$s.Rate = 0; "
+                        "$s.Volume = 100; "
+                        f"$s.Speak('{safe_text}'); "
+                        "$s.Dispose()"
+                    )
+
+                    subprocess.run(
+                        [
+                            "powershell.exe",
+                            "-NoProfile",
+                            "-NonInteractive",
+                            "-Command",
+                            ps_command
+                        ],
+                        capture_output=True,
+                        text=True,
+                        timeout=30
+                    )
+
+                except Exception as e:
+                    print(f"Windows TTS error: {e}")
+
+            # -------------------------------------------------
+            # Backend unavailable
+            # -------------------------------------------------
+            if self.tts_backend == "none":
+                print("TTS: No speech backend available.")
+
+        # Update UI transcript
         safe_eel("receiverText", text)
-
 
 # Singleton voice engine instance
 voice_engine = VoiceEngine()
@@ -93,40 +182,114 @@ def speak(text):
     """
     voice_engine.speak(text)
 
+@eel.expose
+def getVoiceStatus():
+    """
+    Returns the current voice/transcription capability status.
+    """
+    return {
+        "success": True,
+        "speech_recognition": True,
+        "provider": "Google Speech Recognition",
+        "language": "en-US"
+    }
 
 def takecommand() -> Optional[str]:
     """
     Listen to user speech input via microphone using Google Speech Recognition.
-    Fixes the echo bug by not speaking user input back.
+    Sends voice-state updates to the frontend.
     """
+
     r = sr.Recognizer()
     query = None
 
     try:
         with sr.Microphone() as source:
             print("Listening...")
+
+            safe_eel("voiceStatus", {
+                "status": "listening",
+                "text": "Listening..."
+            })
+
             safe_eel("DisplayMessage", "I'm listening...")
+
             r.pause_threshold = 1.0
-            r.adjust_for_ambient_noise(source, duration=0.8)
-            audio = r.listen(source, timeout=8, phrase_time_limit=10)
+            r.dynamic_energy_threshold = True
+
+            r.adjust_for_ambient_noise(
+                source,
+                duration=0.5
+            )
+
+            audio = r.listen(
+                source,
+                timeout=8,
+                phrase_time_limit=10
+            )
 
         print("Recognizing speech...")
-        safe_eel("DisplayMessage", "Recognizing...")
-        query = r.recognize_google(audio, language='en-US')
-        print(f"User said: {query}\n")
-        safe_eel("DisplayMessage", query)
 
-        # Removed speak(query) echo bug here!
+        safe_eel("voiceStatus", {
+            "status": "recognizing",
+            "text": "Recognizing..."
+        })
+
+        safe_eel(
+            "DisplayMessage",
+            "Recognizing..."
+        )
+
+        query = r.recognize_google(
+            audio,
+            language="en-US"
+        )
+
+        query = query.strip()
+
+        print(f"User said: {query}")
+
+        safe_eel("voiceStatus", {
+            "status": "complete",
+            "text": query
+        })
+
+        safe_eel(
+            "DisplayMessage",
+            query
+        )
 
     except sr.WaitTimeoutError:
-        print("Microphone listen timed out.")
-        return None
+        print("Listening timed out.")
+
+        safe_eel("voiceStatus", {
+            "status": "timeout",
+            "text": "Listening timed out."
+        })
+
     except sr.UnknownValueError:
-        print("Could not understand audio.")
-        return None
+        print("Could not understand the audio.")
+
+        safe_eel("voiceStatus", {
+            "status": "error",
+            "text": "I couldn't understand that."
+        })
+
+    except sr.RequestError as e:
+        print(f"Speech recognition service error: {e}")
+
+        safe_eel("voiceStatus", {
+            "status": "error",
+            "text": "Speech recognition service unavailable."
+        })
+
     except Exception as e:
-        print(f"Voice recognition error: {e}")
-        return None
+        print(f"Speech recognition error: {e}")
+
+        safe_eel("voiceStatus", {
+            "status": "error",
+            "text": "Voice recognition error."
+        })
 
     return query.lower() if query else None
 

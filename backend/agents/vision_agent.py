@@ -171,6 +171,86 @@ class VisionAgent:
                 "data": None,
                 "error": str(e)
             }
+    def detect_faces(self, camera_index: int = 0) -> Dict[str, Any]:
+        """
+        Detect faces from a single webcam frame using OpenCV Haar Cascade.
+        This is lightweight and works locally without an external API.
+        """
+        try:
+            import cv2
+
+            cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+            face_cascade = cv2.CascadeClassifier(cascade_path)
+
+            if face_cascade.empty():
+                return {
+                    "success": False,
+                    "message": "Face detection model could not be loaded.",
+                    "data": None,
+                    "error": "CascadeLoadFailed"
+                }
+
+            cap = cv2.VideoCapture(camera_index)
+
+            if not cap.isOpened():
+                return {
+                    "success": False,
+                    "message": f"Webcam (camera index {camera_index}) is not accessible.",
+                    "data": None,
+                    "error": "CameraUnavailable"
+                }
+
+            ret, frame = cap.read()
+            cap.release()
+
+            if not ret or frame is None:
+                return {
+                    "success": False,
+                    "message": "Failed to read frame from webcam.",
+                    "data": None,
+                    "error": "FrameReadFailed"
+                }
+
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            faces = face_cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.1,
+                minNeighbors=5,
+                minSize=(60, 60)
+            )
+
+            face_data = []
+
+            for (x, y, w, h) in faces:
+                face_data.append({
+                    "x": int(x),
+                    "y": int(y),
+                    "width": int(w),
+                    "height": int(h)
+                })
+
+            return {
+                "success": True,
+                "message": f"Detected {len(face_data)} face(s) in the camera frame.",
+                "data": {
+                    "camera_index": camera_index,
+                    "face_count": len(face_data),
+                    "faces": face_data,
+                    "frame_width": int(frame.shape[1]),
+                    "frame_height": int(frame.shape[0]),
+                    "timestamp": datetime.now().isoformat()
+                },
+                "error": None
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Face detection failed: {str(e)}",
+                "data": None,
+                "error": str(e)
+            }      
 
     def analyze_image(self, image_path: str, prompt: str = "Describe what you see in this image in detail.") -> Dict[str, Any]:
         """

@@ -1,6 +1,14 @@
 import inspect
 import time
 from typing import Any, Callable, Dict, List, Optional
+from backend.tools.system_monitor import get_system_monitor
+from backend.tools.weather_tools import get_weather
+from backend.tools.location_tools import get_location
+from backend.agents.vision_agent import vision_agent as vision_agent_instance
+from backend.core.permission import (
+    requires_confirmation,
+    build_confirmation_message
+)
 
 
 def format_tool_result(success: bool, message: str, data: Any = None, error: Optional[str] = None) -> Dict[str, Any]:
@@ -50,7 +58,7 @@ class ToolRouter:
             "requires_confirmation": requires_confirmation
         }
 
-    def execute(self, name: str, *args, **kwargs) -> Dict[str, Any]:
+    def execute(self, name: str, *args, _confirmed: bool = False, **kwargs) -> Dict[str, Any]:
         """
         Execute a tool safely, returning a structured result.
         """
@@ -66,6 +74,28 @@ class ToolRouter:
 
         tool_meta = self._tools[name]
         func = tool_meta["function"]
+
+        # Security / Permission Check
+        if requires_confirmation(name) and not _confirmed:
+            from backend.core.permission import set_pending_action
+
+            set_pending_action(
+                tool_name=name,
+                args=args,
+                kwargs=kwargs
+            )
+
+            return format_tool_result(
+                success=False,
+                message=build_confirmation_message(name, args),
+                data={
+                    "requires_confirmation": True,
+                    "tool": name,
+                    "args": args,
+                    "kwargs": kwargs
+                },
+                error="ConfirmationRequired"
+            )
 
         try:
             raw_result = func(*args, **kwargs)
@@ -221,6 +251,55 @@ def register_default_tools():
             "get_active_window", system_tools.get_active_window,
             description="Get title of currently focused active window",
             category="system"
+        )
+
+        router.register(
+            "get_system_monitor",
+            lambda _args=None: get_system_monitor(),
+            description="Get live CPU, memory, disk, battery and uptime information",
+            category="system"
+        )
+        router.register(
+            "get_weather",
+            lambda args=None: get_weather((args or {}).get("location", "")),
+            description="Get current weather for a location",
+            category="weather"
+        )
+
+        router.register(
+            "get_location",
+            lambda _args=None: get_location(),
+            description="Get approximate current location using IP geolocation",
+            category="location"
+        )
+
+             # Vision Tools
+        router.register(
+            "capture_webcam",
+            vision_agent_instance.capture_webcam,
+            description="Capture a single frame from the webcam",
+            category="vision"
+        )
+
+        router.register(
+            "detect_faces",
+            vision_agent_instance.detect_faces,
+            description="Detect faces in a webcam frame using OpenCV",
+            category="vision"
+        )
+
+        router.register(
+            "analyze_image",
+            vision_agent_instance.analyze_image,
+            description="Analyze an image using the vision system",
+            category="vision"
+        )
+
+        router.register(
+            "read_text_from_image",
+            vision_agent_instance.read_text_from_image,
+            description="Read text from an image",
+            category="vision"
         )
 
         # File Tools & File Agent

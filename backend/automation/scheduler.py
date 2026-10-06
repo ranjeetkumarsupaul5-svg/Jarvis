@@ -23,6 +23,8 @@ class Scheduler:
         run_at: str
     ):
         """
+        Schedule a reminder in SQLite.
+
         run_at format:
         YYYY-MM-DD HH:MM:SS
         """
@@ -46,29 +48,62 @@ class Scheduler:
                 "error": "PastTime"
             }
 
-        task_id = str(uuid.uuid4())[:8]
+        try:
+            from backend.db import get_db_connection
 
-        task = {
-            "id": task_id,
-            "type": "reminder",
-            "message": message,
-            "run_at": scheduled_time,
-            "status": "scheduled"
-        }
+            # Scheduler expects ISO format in command
+            reminder_command = (
+                "__REMINDER_TIME__="
+                + scheduled_time.isoformat()
+            )
 
-        with self.lock:
-            self.tasks[task_id] = task
+            with get_db_connection() as conn:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO automations
+                    (
+                        name,
+                        trigger_type,
+                        command,
+                        interval_sec,
+                        status,
+                        last_run
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        message,
+                        "REMINDER",
+                        reminder_command,
+                        0,
+                        "ACTIVE",
+                        None
+                    )
+                )
 
-        return {
-            "success": True,
-            "message": f"Reminder scheduled for {run_at}.",
-            "data": {
-                "task_id": task_id,
-                "message": message,
-                "run_at": run_at,
-                "status": "scheduled"
+                conn.commit()
+
+                task_id = cursor.lastrowid
+
+            return {
+                "success": True,
+                "message": f"Reminder scheduled for {run_at}.",
+                "data": {
+                    "task_id": task_id,
+                    "message": message,
+                    "run_at": run_at,
+                    "status": "scheduled"
+                }
             }
-        }
+
+        except Exception as e:
+            print(f"Failed to add reminder: {e}")
+
+            return {
+                "success": False,
+                "message": "Failed to schedule reminder.",
+                "error": str(e)
+            }
 
     def list_tasks(self):
         with self.lock:

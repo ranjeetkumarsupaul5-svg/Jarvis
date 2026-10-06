@@ -107,6 +107,15 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Migration: add scheduled time for one-time reminders
+        try:
+            c.execute(
+                "ALTER TABLE automations ADD COLUMN scheduled_at TIMESTAMP NULL"
+            )
+        except Exception:
+            pass
+
         # Populate default system commands if empty
         row = c.execute("SELECT COUNT(*) as count FROM sys_command").fetchone()
         if row["count"] == 0:

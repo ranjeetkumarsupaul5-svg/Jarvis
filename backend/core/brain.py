@@ -96,6 +96,63 @@ class JarvisBrain:
         # ---------------------------------------------------------
         memory_manager.add_conversation_turn("user", raw_command)
 
+                # ---------------------------------------------------------
+        # 1.5 Handle pending dangerous-action confirmation
+        # ---------------------------------------------------------
+        from backend.core.permission import (
+            get_pending_action,
+            clear_pending_action,
+            is_confirmation,
+            is_rejection,
+        )
+
+        pending_action = get_pending_action()
+
+        if pending_action:
+
+            # User approved the pending action
+            if is_confirmation(command):
+
+                tool_name = pending_action["tool"]
+                args = pending_action["args"]
+                kwargs = pending_action["kwargs"]
+
+                clear_pending_action()
+
+                result = router.execute(
+                    tool_name,
+                    *args,
+                    _confirmed=True,
+                    **kwargs
+                )
+
+                return result
+
+            # User rejected the pending action
+            if is_rejection(command):
+
+                clear_pending_action()
+
+                return {
+                    "success": True,
+                    "message": "Action cancelled.",
+                    "spoken": "Okay sir, action cancelled.",
+                    "data": None,
+                    "tool": "permission"
+                }
+
+            # User said something other than yes/no
+            return {
+                "success": False,
+                "message": "Please say yes to continue or no to cancel.",
+                "spoken": "Please say yes to continue or no to cancel, sir.",
+                "data": {
+                    "pending_tool": pending_action["tool"]
+                },
+                "tool": "permission",
+                "error": "ConfirmationExpected"
+            }
+
         # ---------------------------------------------------------
         # 2. Handle explicit memory commands FIRST
         # ---------------------------------------------------------
@@ -146,6 +203,161 @@ class JarvisBrain:
                     message,
                     run_at.strftime("%Y-%m-%d %H:%M:%S")
                 )
+
+        # Deterministic system monitor commands
+        system_query = command.lower().strip()
+
+        if system_query in [
+            "system status",
+            "system information",
+            "system info",
+            "check system",
+            "check my system",
+            "show system status",
+            "show system information",
+        ]:
+            result = router.execute("get_system_monitor", {})
+
+            if result.get("success"):
+                data = result["data"]
+
+                cpu = data["cpu"]["usage_percent"]
+                memory = data["memory"]["usage_percent"]
+                disk = data["disk"]["usage_percent"]
+                battery = data["battery"]
+
+                message = (
+                    f"CPU usage is {cpu} percent. "
+                    f"Memory usage is {memory} percent. "
+                    f"Disk usage is {disk} percent."
+                )
+
+                if battery:
+                    charging = (
+                        "and the battery is charging"
+                        if battery["charging"]
+                        else "and the battery is not charging"
+                    )
+
+                    message += (
+                        f" Battery is at {battery['percent']} percent, "
+                        f"{charging}."
+                    )
+
+                return {
+                    "success": True,
+                    "message": message,
+                    "spoken": message + " sir.",
+                    "data": data,
+                    "tool": "get_system_monitor",
+                }
+
+            return result
+
+        # Deterministic weather commands
+        weather_query = command.lower().strip()
+
+        if weather_query.startswith("weather in "):
+            location = command[len("weather in "):].strip()
+
+            result = router.execute(
+                "get_weather",
+                {"location": location}
+            )
+
+            if result.get("success"):
+                data = result["data"]
+
+                message = (
+                    f"The current weather in {data['location']} is "
+                    f"{data['temperature_c']} degrees Celsius, "
+                    f"with {data['humidity_percent']} percent humidity. "
+                    f"It feels like {data['feels_like_c']} degrees."
+                )
+
+                if data["rain_mm"] > 0:
+                    message += f" Rainfall is {data['rain_mm']} millimeters."
+                else:
+                    message += " There is no rain currently."
+
+                return {
+                    "success": True,
+                    "message": message,
+                    "spoken": message + " sir.",
+                    "data": data,
+                    "tool": "get_weather",
+                }
+
+            return result
+
+
+        # Deterministic location commands
+        location_query = command.lower().strip()
+
+        if location_query in [
+            "where am i",
+            "what is my location",
+            "my location",
+            "current location",
+            "where are we",
+        ]:
+            result = router.execute("get_location", {})
+
+            if result.get("success"):
+                data = result["data"]
+
+                message = (
+                    f"You are currently in {data['city']}, "
+                    f"{data['region']}, {data['country']}."
+                )
+
+                return {
+                    "success": True,
+                    "message": message,
+                    "spoken": message + " sir.",
+                    "data": data,
+                    "tool": "get_location",
+                }
+
+            return result
+
+        # ---------------------------------------------------------
+        # Deterministic vision / face detection commands
+        # ---------------------------------------------------------
+        vision_query = command.lower().strip()
+
+        if vision_query in [
+            "detect faces",
+            "detect face",
+            "scan my face",
+            "scan faces",
+            "check my face",
+            "check faces",
+            "look at me",
+        ]:
+            result = router.execute("detect_faces")
+
+            if result.get("success"):
+                data = result["data"]
+                face_count = data["face_count"]
+
+                if face_count == 0:
+                    message = "I don't see any face in the camera frame."
+                elif face_count == 1:
+                    message = "I detected one face in the camera frame."
+                else:
+                    message = f"I detected {face_count} faces in the camera frame."
+
+                return {
+                    "success": True,
+                    "message": message,
+                    "spoken": message + " sir.",
+                    "data": data,
+                    "tool": "detect_faces",
+                }
+
+            return result
+        
         # ---------------------------------------------------------
         # Deterministic time handling
         # ---------------------------------------------------------
@@ -308,6 +520,26 @@ class JarvisBrain:
 
         if "git log" in coding_query or "recent commits" in coding_query:
             return router.execute("git_log", 5)
+
+                # ---------------------------------------------------------
+        # Deterministic terminal command routing
+        # ---------------------------------------------------------
+        terminal_query = command.strip()
+
+        terminal_match = re.match(
+            r"^(?:execute|run)\s+(?:command\s+)?(.+)$",
+            terminal_query,
+            flags=re.IGNORECASE
+        )
+
+        if terminal_match:
+            terminal_command = terminal_match.group(1).strip()
+
+            if terminal_command:
+                return router.execute(
+                    "run_command",
+                    terminal_command
+                )
 
         file_query = command.lower().strip()
 
